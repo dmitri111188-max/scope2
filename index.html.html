@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тренажёр Scope 2 — выбросы и зелёные сертификаты</title>
+<style>
+  :root{
+    --dark:#0E3B3E; --teal:#2A9D8F; --teald:#1E7A70; --teall:#9AD3CB;
+    --amber:#E0A23D; --amberd:#B07814; --ink:#1C2B2C; --muted:#6E7E7F;
+    --panel:#F1F6F5; --panel2:#E7F0EE; --line:#D5E2DF; --green:#4C9A5B;
+    --red:#C0392B; --bg:#F7FAF9; --violet:#6E5BA6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  .wrap{max-width:1000px;margin:0 auto;padding:20px 18px 60px}
+  header{background:var(--dark);color:#fff;border-radius:16px;padding:22px 26px;position:relative;overflow:hidden}
+  header h1{margin:0 0 4px;font-size:25px;letter-spacing:.2px}
+  header p{margin:0;color:var(--teall);font-size:14px}
+  .stats{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .stat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+    border-radius:11px;padding:8px 14px;min-width:92px}
+  .stat .v{font-size:22px;font-weight:700;line-height:1.1}
+  .stat .l{font-size:11px;color:var(--teall);text-transform:uppercase;letter-spacing:.5px}
+  .pbar{height:8px;background:rgba(255,255,255,.14);border-radius:6px;margin-top:14px;overflow:hidden}
+  .pbar > div{height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--amber));transition:width .4s}
+  /* profile */
+  .profile{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;background:#fff;border:1px solid var(--line);
+    border-radius:14px;padding:14px 18px;margin:16px 0 4px;box-shadow:0 4px 14px rgba(14,59,62,.05)}
+  .pf{display:flex;flex-direction:column;gap:4px}
+  .pf label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600}
+  .pf input{padding:8px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:14px;min-width:150px}
+  .pf input:focus{outline:0;border-color:var(--teal)}
+  .pf.req input{}
+  .pf .star{color:var(--amberd)}
+  .pf.fio input{min-width:230px}
+  /* controls */
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:16px 0}
+  .tab{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;
+    padding:8px 15px;font-size:13.5px;cursor:pointer;transition:.15s}
+  .tab:hover{border-color:var(--teal)}
+  .tab.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .tab.theory.active{background:var(--violet);border-color:var(--violet)}
+  .spacer{flex:1}
+  .btn{border:0;border-radius:10px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn-amber{background:var(--amber);color:#3a2a06}
+  .btn-amber:hover{background:#d3961f}
+  .btn-teal{background:var(--teal);color:#fff}
+  .btn-teal:hover{background:var(--teald)}
+  .btn-dark{background:var(--dark);color:#fff}
+  .btn-dark:hover{background:#0b2f31}
+  .btn-ghost{background:#fff;color:var(--teald);border:1px solid var(--line)}
+  .btn-ghost:hover{border-color:var(--teal)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 26px;
+    box-shadow:0 6px 22px rgba(14,59,62,.06)}
+  .badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    padding:5px 11px;border-radius:7px;color:#fff;margin-bottom:14px}
+  .legend{font-size:15.5px;margin:0 0 16px}
+  .legend b{color:var(--teald)}
+  table.given{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14.5px}
+  table.given td{padding:8px 12px;border-bottom:1px solid var(--line)}
+  table.given td:first-child{color:var(--muted);width:62%}
+  table.given td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .q{font-size:16px;font-weight:700;margin:6px 0 16px}
+  .fields{display:flex;flex-direction:column;gap:12px;margin-bottom:8px}
+  .field{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .field label.flab{flex:1;min-width:230px;font-size:14.5px}
+  .field input[type=number]{width:170px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;
+    font-size:15px;font-variant-numeric:tabular-nums}
+  .field input:focus{outline:0;border-color:var(--teal)}
+  .field .unit{color:var(--muted);font-size:13.5px;min-width:78px}
+  .field.ok input[type=number]{border-color:var(--green);background:#f1faf2}
+  .field.bad input[type=number]{border-color:var(--red);background:#fdf2f1}
+  .radios{display:flex;gap:10px;flex-wrap:wrap;width:100%}
+  .radios.stack{flex-direction:column}
+  .radios label{flex:none;border:1.5px solid var(--line);border-radius:9px;padding:10px 14px;cursor:pointer;font-size:14.5px;transition:.12s}
+  .radios.stack label{display:block}
+  .radios label:hover{border-color:var(--teal)}
+  .radios label.sel{border-color:var(--teal);background:var(--panel)}
+  .radios label.right{border-color:var(--green);background:#eef9f0}
+  .radios label.wrong{border-color:var(--red);background:#fdeeec}
+  .radios input{margin-right:9px}
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .verdict{margin-top:16px;border-radius:11px;padding:13px 16px;font-weight:600;font-size:15px;display:none}
+  .verdict.show{display:block}
+  .verdict.good{background:#eaf7ec;color:#2c6e38;border:1px solid #bfe3c6}
+  .verdict.bad{background:#fdeceb;color:#9b2f24;border:1px solid #f3c7c2}
+  .verdict.warn{background:#fff7ea;color:#8a5a12;border:1px solid #f0dcae}
+  .solution{display:none;margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .solution.show{display:block}
+  .solution h4{margin:0 0 10px;font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--teald)}
+  .solution .step{margin:0 0 9px;font-size:14.5px}
+  .formula{font-family:"Cambria Math","Times New Roman",Georgia,serif;background:#fff;border:1px solid var(--line);
+    border-radius:8px;padding:9px 13px;display:inline-block;font-size:15.5px;margin:3px 0;font-variant-numeric:tabular-nums}
+  .note{margin-top:10px;font-style:italic;color:var(--teald);font-size:14px}
+  .chartbox{margin-top:18px}
+  .chartbox h4{margin:0 0 6px;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+  svg{max-width:100%;height:auto;display:block}
+  /* results */
+  .results{display:none;margin-top:18px}
+  .results.show{display:block}
+  .results textarea{width:100%;height:230px;border:1px solid var(--line);border-radius:12px;padding:14px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.5;resize:vertical}
+  .foot{margin-top:22px;color:var(--muted);font-size:12px;line-height:1.6}
+  .hl{color:var(--amberd);font-weight:700}
+  .hide{display:none!important}
+  .btn-exam{background:var(--violet);color:#fff}
+  .btn-exam:hover{background:#5a4a8c}
+  .btn:disabled{opacity:.45;cursor:default}
+  .exam-bar{position:sticky;top:0;z-index:5;background:var(--dark);color:#fff;border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:16px 0 12px;box-shadow:0 6px 18px rgba(14,59,62,.18)}
+  .exam-bar .who{font-weight:700;font-size:15px}
+  .exam-bar .prog{color:var(--teall);font-size:13.5px}
+  .timer{margin-left:auto;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.12);padding:4px 12px;border-radius:9px}
+  .timer.warn{background:var(--red)}
+  .navgrid{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+  .navgrid button{width:38px;height:34px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-weight:700;font-size:13px;cursor:pointer;color:var(--ink)}
+  .navgrid button.done{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .navgrid button.cur{outline:3px solid var(--amber);outline-offset:1px}
+  .ex-input{width:170px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:15px;font-variant-numeric:tabular-nums}
+  .ex-input:focus{outline:0;border-color:var(--violet)}
+  .rules{margin:6px 0 14px;padding-left:20px;font-size:14.5px}
+  .rules li{margin-bottom:6px}
+  .comp{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 16px}
+  .comp div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:150px}
+  .comp b{display:block;font-size:22px;color:var(--violet)}
+  .score-big{font-size:52px;font-weight:800;color:var(--violet);line-height:1.1;margin:8px 0}
+  .score-big span{font-size:22px;color:var(--muted);font-weight:600}
+  @media(max-width:600px){ .field input[type=number]{width:130px} header h1{font-size:20px}
+    .exam-bar{padding:10px 14px;gap:4px 12px} .exam-bar .who{font-size:14px} .timer{font-size:18px}
+    .navgrid{gap:5px} .navgrid button{width:34px;height:30px;font-size:12px} .ex-input{width:140px} }
+  /* ===== визуальное обновление ===== */
+  body{background:#F2F6F5}
+  .ic{display:inline-block;vertical-align:middle;flex:none}
+  header{background:linear-gradient(135deg,#0B3236 0%,#0E4A45 55%,#14634F 100%);padding:22px 24px 18px}
+  header::after{content:"";position:absolute;right:-60px;top:-70px;width:260px;height:260px;border-radius:50%;background:rgba(93,202,165,.13);pointer-events:none}
+  .hero-row{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+  .logo{width:52px;height:52px;border-radius:14px;background:#1D9E75;display:flex;align-items:center;justify-content:center;color:#E1F5EE;flex:none}
+  .hero-title h1{margin:0 0 3px;font-size:26px}
+  .hero-title p{margin:0;color:#9FE1CB;font-size:13.5px}
+  .stats{position:relative;z-index:1;margin-top:16px;gap:8px}
+  .stat{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:8px 14px 8px 10px;min-width:0}
+  .stat .si{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);color:#FAC775}
+  .stat .v{font-size:20px}
+  .pbar{position:relative;z-index:1}
+  #ctrls{margin:16px 0}
+  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+  .tab.mode{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:4px;border-radius:14px;padding:12px 14px 12px;background:#fff;border:1.5px solid var(--line);color:var(--ink);box-shadow:0 2px 8px rgba(14,59,62,.04);transition:border-color .15s,transform .15s,box-shadow .15s;font-family:inherit;cursor:pointer}
+  .tab.mode:hover{border-color:var(--c);transform:translateY(-2px);box-shadow:0 6px 16px rgba(14,59,62,.08)}
+  .tab.mode.active{background:var(--bg);border:2px solid var(--c);color:var(--ink)}
+  .mode .mi{width:38px;height:38px;border-radius:11px;background:var(--bg);color:var(--d);display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+  .mode.active .mi{background:var(--c);color:#fff}
+  .mode .mt{font-size:14.5px;font-weight:700}
+  .mode .ms{font-size:12px;color:var(--muted)}
+  .mode .mbar{width:100%;height:5px;border-radius:99px;background:rgba(14,59,62,.08);margin-top:8px;overflow:hidden}
+  .mode .mbar i{display:block;height:100%;width:0;background:var(--c);border-radius:99px;transition:width .4s}
+  .mode .mstat{font-size:11.5px;color:var(--muted)}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .toolbar .spacer{flex:1}
+  .btn{display:inline-flex;align-items:center;gap:8px}
+  .card{border-radius:18px}
+  .badge{display:inline-flex;align-items:center;gap:7px;border-radius:10px;padding:6px 13px 6px 9px;letter-spacing:.4px}
+  .gtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 18px}
+  .gt{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 13px}
+  .gl{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:3px}
+  .gv{font-size:16px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  .q{font-size:17px;background:#F7FAF9;border-radius:12px;padding:12px 14px;border:1px dashed var(--line)}
+  .ingroup{display:inline-flex;align-items:stretch;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;transition:border-color .15s,box-shadow .15s}
+  .ingroup:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px rgba(42,157,143,.15)}
+  .ingroup input,.ingroup .ex-input{border:0!important;outline:0;padding:11px 14px;font-size:18px;font-weight:700;width:190px;background:transparent;font-variant-numeric:tabular-nums}
+  .ingroup .unit{background:var(--panel);padding:0 14px;display:flex;align-items:center;color:var(--muted);font-size:14px;min-width:0;border-left:1px solid var(--line)}
+  .field.ok .ingroup{border-color:var(--green);background:#f1faf2}
+  .field.bad .ingroup{border-color:var(--red);background:#fdf2f1}
+  #check{padding:12px 24px;font-size:15px}
+  .navgrid button.done{background:var(--c,var(--teal));border-color:var(--c,var(--teal));color:#fff}
+  @media(max-width:600px){ .hero-title h1{font-size:21px} .logo{width:44px;height:44px} .stat{padding:6px 10px 6px 8px} .stat .si{width:28px;height:28px}
+    .ingroup input,.ingroup .ex-input{width:140px} .modes{grid-template-columns:1fr 1fr} .tab.mode{padding:10px 11px} .stats{display:grid;grid-template-columns:1fr 1fr}
+    .modes .tab.mode:last-child{grid-column:1/-1} .toolbar{display:grid;grid-template-columns:1fr 1fr} .toolbar .spacer{display:none} .toolbar .btn{justify-content:center;padding:11px 10px} .toolbar .btn .ic{display:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header id="topHeader">
+    <div class="hero-row">
+      <div class="logo"><span data-ic="leaf" data-s="28"></span></div>
+      <div class="hero-title"><h1>Тренажёр Scope 2</h1><p>Выбросы и зелёные сертификаты · региональный и рыночный методы · реальные коэффициенты 2022–2025</p></div>
+    </div>
+    <div class="stats" id="statsBox">
+      <div class="stat"><span class="si"><span data-ic="star"></span></span><div><div class="v" id="st-score">0</div><div class="l">Очки</div></div></div>
+      <div class="stat"><span class="si"><span data-ic="check"></span></span><div><div class="v" id="st-solved">0</div><div class="l">Решено</div></div></div>
+      <div class="stat"><span class="si"><span data-ic="target"></span></span><div><div class="v" id="st-acc">—</div><div class="l">Точность</div></div></div>
+      <div class="stat"><span class="si"><span data-ic="flame"></span></span><div><div class="v" id="st-streak">0</div><div class="l">Серия</div></div></div>
+    </div>
+    <div class="pbar" id="pbarBox"><div id="pbar"></div></div>
+  </header>
+
+  <div class="profile" id="profileBox">
+    <div class="pf fio req"><label>ФИО студента <span class="star">*</span></label><input id="p-fio" placeholder="Иванов Иван Иванович"></div>
+    <div class="pf"><label>Факультет</label><input id="p-fac" placeholder="Экономический"></div>
+    <div class="pf"><label>Группа / курс</label><input id="p-grp" placeholder="Э-301"></div>
+    <div class="pf" id="finishBox"><label>&nbsp;</label><button class="btn btn-dark" id="finish">Завершить и отправить ✉</button></div>
+  </div>
+
+  <div id="ctrls">
+    <div class="modes">
+      <button class="tab mode active" data-type="any" style="--c:#0E3B3E;--d:#0E3B3E;--bg:#E7F0EE"><span class="mi"><span data-ic="shuffle" data-s="22"></span></span><span class="mt">Случайная задача</span><span class="ms">из трёх расчётных блоков</span><span class="mbar"><i id="mb-any"></i></span><span class="mstat" id="mst-any">ещё не решали</span></button>
+      <button class="tab mode" data-type="base" style="--c:#1D9E75;--d:#0F6E56;--bg:#E1F5EE"><span class="mi"><span data-ic="bolt" data-s="22"></span></span><span class="mt">Базовый расчёт</span><span class="ms">электроэнергия и тепло</span><span class="mbar"><i id="mb-base"></i></span><span class="mstat" id="mst-base">ещё не решали</span></button>
+      <button class="tab mode" data-type="market" style="--c:#BA7517;--d:#854F0B;--bg:#FAEEDA"><span class="mi"><span data-ic="cert" data-s="22"></span></span><span class="mt">Рыночный метод</span><span class="ms">сертификаты и residual mix</span><span class="mbar"><i id="mb-market"></i></span><span class="mstat" id="mst-market">ещё не решали</span></button>
+      <button class="tab mode" data-type="econ" style="--c:#7F77DD;--d:#534AB7;--bg:#EEEDFE"><span class="mi"><span data-ic="coin" data-s="22"></span></span><span class="mt">Экономика закупки</span><span class="ms">цена тонны CO₂</span><span class="mbar"><i id="mb-econ"></i></span><span class="mstat" id="mst-econ">ещё не решали</span></button>
+      <button class="tab mode" data-type="theory" style="--c:#378ADD;--d:#185FA5;--bg:#E6F1FB"><span class="mi"><span data-ic="school" data-s="22"></span></span><span class="mt">Тест по теории</span><span class="ms">15 вопросов по лекции</span><span class="mbar"><i id="mb-theory"></i></span><span class="mstat" id="mst-theory">ещё не решали</span></button>
+    </div>
+    <div class="toolbar"><span class="spacer"></span>
+      <button class="btn btn-exam" id="examBtn"><span data-ic="exam" data-s="18"></span>Контрольная работа</button>
+      <button class="btn btn-amber" id="newTask"><span data-ic="refresh" data-s="18"></span>Новая задача</button>
+    </div>
+  </div>
+
+  <div class="card" id="card"></div>
+
+  <div class="card results" id="results" style="margin-top:18px">
+    <span class="badge" style="background:var(--dark)">Итоговый отчёт</span>
+    <p class="legend">Письмо для отправки преподавателю на <b>i@dsenchuk.ru</b>. Нажмите «Открыть письмо» — откроется ваш почтовый клиент с заполненным текстом, останется нажать «Отправить». Если клиент не открылся — «Скопировать» или «Скачать .txt» и отправьте вручную.</p>
+    <textarea id="report" readonly></textarea>
+    <div class="actions">
+      <button class="btn btn-teal" id="sendMail">Открыть письмо ✉</button>
+      <button class="btn btn-ghost" id="copyRep">Скопировать</button>
+      <button class="btn btn-ghost" id="dlRep">Скачать .txt</button>
+      <button class="btn btn-ghost" id="closeRep">Продолжить тренировку</button>
+    </div>
+  </div>
+
+  <div class="card hide" id="examIntro" style="margin-top:16px"></div>
+  <div class="hide" id="examView">
+    <div class="exam-bar"><span class="who" id="exWho"></span><span class="prog" id="exProg"></span><span class="timer" id="exTimer">⏱ 00:00</span></div>
+    <div class="navgrid" id="exNav"></div>
+    <div class="card" id="exCard"></div>
+  </div>
+  <div class="card hide" id="examDone" style="margin-top:16px"></div>
+
+</div>
+
+<script>
+/* ====================== ДАННЫЕ (кг CO₂e на единицу) ====================== */
+const LOC = {
+ 2022:{"Первая ЦЗ (Европа и Урал)":322.076,"Вторая ЦЗ (Сибирь)":447.776,"НЦЗ Архангельской обл.":594.514,"НЦЗ Дальнего Востока":472.915,"НЦЗ Калининградской обл.":470.215,"НЦЗ Республики Коми":565.507,"ТИТЭС Камчатского края":465.274,"ТИТЭС Сахалинской обл.":635.420,"ТИТЭС Магаданской обл.":53.885,"ТИТЭС Чукотского АО":549.108},
+ 2023:{"Первая ЦЗ (Европа и Урал)":326.365,"Вторая ЦЗ (Сибирь)":431.009,"НЦЗ Архангельской обл.":583.392,"НЦЗ Дальнего Востока":482.988,"НЦЗ Калининградской обл.":473.521,"НЦЗ Республики Коми":529.339,"ТИТЭС Камчатского края":512.553,"ТИТЭС Сахалинской обл.":630.300,"ТИТЭС Магаданской обл.":57.093,"ТИТЭС Чукотского АО":541.460},
+ 2024:{"Первая ЦЗ (Европа и Урал)":333.020,"Вторая ЦЗ (Сибирь)":445.732,"НЦЗ Архангельской обл.":581.287,"НЦЗ Дальнего Востока":512.399,"НЦЗ Калининградской обл.":477.610,"НЦЗ Республики Коми":488.621,"ТИТЭС Камчатского края":512.794,"ТИТЭС Сахалинской обл.":662.084,"ТИТЭС Магаданской обл.":56.371,"ТИТЭС Чукотского АО":473.105},
+ 2025:{"Первая ЦЗ (Европа и Урал)":336.089,"Вторая ЦЗ (Сибирь)":476.164,"Вторая ЦЗ (Восток)":488.738,"НЦЗ Калининградской обл.":525.352,"ТИТЭС Камчатского края":550.442,"ТИТЭС Сахалинской обл.":700.851,"ТИТЭС Магаданской обл.":57.262,"ТИТЭС Чукотского АО":466.879}
+};
+const RES = {
+ 2024:{"Первая ЦЗ (Европа и Урал)":335.736,"Вторая ЦЗ (Сибирь)":489.638,"НЦЗ Архангельской обл.":581.294,"НЦЗ Дальнего Востока":512.399,"НЦЗ Калининградской обл.":477.610,"НЦЗ Республики Коми":488.645,"ТИТЭС Камчатского края":512.794,"ТИТЭС Сахалинской обл.":662.084,"ТИТЭС Магаданской обл.":56.371,"ТИТЭС Чукотского АО":473.105},
+ 2025:{"Первая ЦЗ (Европа и Урал)":339.020,"Вторая ЦЗ (Сибирь)":685.116,"Вторая ЦЗ (Восток)":489.465,"НЦЗ Калининградской обл.":525.352,"ТИТЭС Камчатского края":550.442,"ТИТЭС Сахалинской обл.":700.851,"ТИТЭС Магаданской обл.":57.262,"ТИТЭС Чукотского АО":466.879}
+};
+const HEAT = {
+ 2022:{"Москва":221.702,"Санкт-Петербург":238.749,"Белгородская область":234.137,"Воронежская область":249.698,"Волгоградская область":255.139,"Вологодская область":266.403,"Архангельская область":293.304,"Ростовская область":263.396,"Краснодарский край":262.788,"Республика Татарстан":234.684,"Свердловская область":281.924,"Новосибирская область":418.455,"Алтайский край":476.133,"Амурская область":523.911,"Иркутская область":506.170},
+ 2023:{"Москва":222.766,"Санкт-Петербург":237.496,"Белгородская область":237.522,"Воронежская область":260.070,"Волгоградская область":257.000,"Вологодская область":247.094,"Архангельская область":294.538,"Ростовская область":268.207,"Краснодарский край":266.056,"Республика Татарстан":234.233,"Свердловская область":283.832,"Новосибирская область":429.479,"Алтайский край":438.855,"Амурская область":511.798,"Иркутская область":510.373},
+ 2024:{"Москва":223.532,"Санкт-Петербург":238.526,"Белгородская область":234.165,"Воронежская область":255.459,"Волгоградская область":257.434,"Вологодская область":253.373,"Архангельская область":294.453,"Ростовская область":261.847,"Краснодарский край":264.356,"Республика Татарстан":234.866,"Свердловская область":279.591,"Новосибирская область":431.114,"Алтайский край":450.750,"Амурская область":506.470,"Иркутская область":513.707},
+ 2025:{"Москва":221.443,"Санкт-Петербург":236.923,"Белгородская область":236.311,"Воронежская область":255.868,"Волгоградская область":260.050,"Вологодская область":247.320,"Архангельская область":294.130,"Ростовская область":263.029,"Краснодарский край":267.362,"Республика Татарстан":235.115,"Свердловская область":278.766,"Новосибирская область":432.635,"Алтайский край":448.576,"Амурская область":496.454,"Иркутская область":497.976}
+};
+
+/* ====================== ТЕОРИЯ (тест) ====================== */
+const THEORY=[
+ {q:"Что относится к Scope 2?",o:["Сжигание топлива на собственных объектах компании","Выбросы от производства приобретённой со стороны электроэнергии, тепла, пара, холода","Выбросы цепочки поставок и использования продукции","Утечки хладагентов из оборудования"],c:1,
+  e:"Scope 2 — косвенные энергетические выбросы от купленной со стороны энергии."},
+ {q:"Какие два метода расчёта Scope 2 предусматривает GHG Protocol?",o:["Прямой и косвенный","Location-based и market-based","Валовой и чистый","Физический и пропорциональный"],c:1,
+  e:"Региональный (location-based) и рыночный (market-based)."},
+ {q:"Что использует location-based метод?",o:["Индивидуальные коэффициенты поставщиков","Среднесетевой коэффициент выбросов энергосистемы зоны","Residual mix","Цену углерода"],c:1,
+  e:"Средняя углеродоёмкость сети зоны."},
+ {q:"Зачем нужен residual mix?",o:["Чтобы усреднить выбросы по стране","Чтобы учесть остаток сети без проданных атрибутов и избежать двойного счёта","Чтобы посчитать тепло","Чтобы заменить базовый год"],c:1,
+  e:"Это коэффициент «остатка» генерации, атрибуты которой не проданы."},
+ {q:"Почему residual mix обычно выше среднесетевого коэффициента?",o:["Из-за инфляции","Часть «чистой» генерации забрали покупатели атрибутов — остаток грязнее","Из-за роста потребления","Из-за сетевых потерь"],c:1,
+  e:"Зелёная генерация «вычитается» из общего пула, повышая интенсивность остатка."},
+ {q:"Покупка зелёных сертификатов снижает показатель…",o:["Location-based","Market-based","Оба одинаково","Ни один из них"],c:1,
+  e:"Эффект закупки виден только в рыночном методе."},
+ {q:"Сколько критериев качества к договорным инструментам в Scope 2 Guidance (Table 7.1)?",o:["3","5","8","12"],c:2,
+  e:"Восемь критериев качества."},
+ {q:"Что такое dual reporting?",o:["Двойной учёт выбросов","Публикация Scope 2 по обоим методам","Отчёт сразу за два года","Проверка двумя аудиторами"],c:1,
+  e:"Раскрытие и location-, и market-based результата."},
+ {q:"Можно ли складывать результаты location- и market-based?",o:["Да, для полноты картины","Нет — это разные способы распределения одних и тех же выбросов","Да, если аудитор один","Только для тепла"],c:1,
+  e:"Методы не суммируются и не взаимозачитываются."},
+ {q:"Единица коэффициента выбросов от тепловой энергии:",o:["тCO₂e/МВт·ч","тCO₂e/Гкал","кг/кВт","₽/Гкал"],c:1,
+  e:"Тепло измеряется в Гкал."},
+ {q:"Собственная котельная компании (сжигание газа) относится к:",o:["Scope 1","Scope 2","Scope 3","Не учитывается"],c:0,
+  e:"Собственное сжигание топлива — прямые выбросы, Scope 1."},
+ {q:"Нулевой market-based Scope 2 корректен только если…",o:["Куплены любые сертификаты","Атрибуты соответствуют всем 8 критериям качества","Компания в «чистой» зоне","Тепло не потребляется"],c:1,
+  e:"Иначе это гринвошинг."},
+ {q:"Кто в РФ рассчитывает коэффициенты энергосистемы и residual mix?",o:["Росстат","АО «АТС» / Ассоциация «Совет рынка»","Минфин России","Каждая компания сама"],c:1,
+  e:"Централизованный расчёт обеспечивает сходимость и верифицируемость."},
+ {q:"Зачем нужен базовый год?",o:["Чтобы платить налог","Чтобы отслеживать динамику и ставить цели сокращения","Чтобы выбрать зону","Чтобы определить тариф"],c:1,
+  e:"Точка отсчёта для целей; пересчитывается при структурных изменениях."},
+ {q:"Сетевые потери при передаче электроэнергии в Scope 2 потребителя:",o:["Включаются","Не включаются","Включаются только для тепла","Зависят от региона"],c:1,
+  e:"Согласно Scope 2 Guidance (п.4.2) и ISO 14064-1 — не учитываются."}
+];
+
+/* ====================== ОФОРМЛЕНИЕ ====================== */
+const ICONS={
+ leaf:'<path d="M5 21c.5-4.5 2.5-8 7-10"/><path d="M9 18c6.2 0 10.5-3.3 11-12V4h-4.1C7 4 4 8 4 13c0 1.5.5 3 1 5"/>',
+ star:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+ check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+ target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
+ flame:'<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-8.5z"/>',
+ shuffle:'<path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>',
+ bolt:'<path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/>',
+ cert:'<circle cx="12" cy="9" r="5"/><path d="M8.5 13.5L7 21l5-3 5 3-1.5-7.5"/>',
+ coin:'<circle cx="12" cy="12" r="9"/><path d="M14.8 9a2 2 0 0 0-1.8-1h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1M12 6v2m0 8v2"/>',
+ school:'<path d="M22 9L12 5 2 9l10 4 10-4v6"/><path d="M6 10.6V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-5.4"/>',
+ exam:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>',
+ refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
+ pin:'<path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+ calendar:'<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16"/>',
+ plug:'<path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0V7zM12 16v5"/>',
+ cloud:'<path d="M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.3 11 3.5 3.5 0 0 0 7 18z"/>',
+ factory:'<path d="M3 21h18M5 21V10l5 3V10l5 3V7l4-2v16"/>',
+ tag:'<path d="M3 12V4h8l9 9-8 8-9-9z"/><circle cx="7.5" cy="7.5" r="1.5"/>'};
+function ic(n,s){s=s||20;return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[n]||'')+'</svg>';}
+const CAT={base:{c:'#1D9E75',d:'#0F6E56',icon:'bolt'},market:{c:'#BA7517',d:'#854F0B',icon:'cert'},econ:{c:'#7F77DD',d:'#534AB7',icon:'coin'},theory:{c:'#378ADD',d:'#185FA5',icon:'school'}};
+function badgeHTML(T,text){const k=CAT[T.cat]||CAT.base;return '<span class="badge" style="background:'+k.d+'">'+ic(k.icon,16)+text+'</span>';}
+function iconFor(label){const l=label.replace(/<[^>]+>/g,'').toLowerCase();
+ if(/цена/.test(l))return 'tag'; if(/выбросы без|цель/.test(l))return /цель/.test(l)?'target':'factory';
+ if(/атрибут|вэ\)|инд/.test(l))return 'leaf'; if(/зона|регион/.test(l))return 'pin'; if(/^год/.test(l))return 'calendar';
+ if(/потребление/.test(l))return 'plug'; return 'cloud';}
+function givenHTML(g){return g.length?'<div class="gtiles">'+g.map(x=>'<div class="gt"><div class="gl">'+ic(iconFor(x[0]),15)+x[0]+'</div><div class="gv">'+x[1]+'</div></div>').join('')+'</div>':'';}
+
+/* ====================== УТИЛИТЫ ====================== */
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+const keys=o=>Object.keys(o);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function fmt(x,dec=1){return Number(x).toLocaleString('ru-RU',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+const fmt0=x=>fmt(x,0);
+function parseNum(v){ if(v==null) return NaN; return parseFloat(String(v).replace(/\s/g,'').replace(',','.')); }
+
+/* ====================== ГЕНЕРАТОРЫ ====================== */
+function genBase(){
+  if(Math.random()<0.5){
+    const yr=pick([2022,2023,2024,2025]);
+    const zone=pick(keys(LOC[yr])); const EF=LOC[yr][zone];
+    const EC=Math.round(rnd(2,60))*1000; const E=EC*EF/1000;
+    return {cat:"base",
+      typeLabel:"Базовый · электроэнергия (location-based)", color:"var(--teald)",
+      legend:`Компания потребляет электроэнергию из сети в зоне <b>«${zone}»</b>. Отчётный год — <b>${yr}</b>. Договорных «зелёных» инструментов нет — считаем региональным (location-based) методом.`,
+      given:[["Зона энергосистемы",zone],["Год",yr],["Потребление, EC",fmt0(EC)+" МВт·ч"],["Коэффициент EF<sub>эс</sub>",fmt(EF,3)+" кг CO₂e/МВт·ч"]],
+      question:"Рассчитайте выбросы Scope 2 (location-based), тCO₂e.",
+      fields:[{key:"E",label:"Выбросы Scope 2",unit:"тCO₂e",kind:"num"}],
+      answer:{E:E}, tol:{E:Math.max(0.5,E*0.004)},
+      solution:()=>`<h4>Решение</h4>
+        <div class="step">Региональный метод: <span class="formula">E = EC × EF<sub>эс</sub></span></div>
+        <div class="step">Переводим коэффициент в тонны: ${fmt(EF,3)} кг = ${fmt(EF/1000,5)} тCO₂e/МВт·ч.</div>
+        <div class="step"><span class="formula">E = ${fmt0(EC)} × ${fmt(EF/1000,5)} = <b>${fmt(E,1)} тCO₂e</b></span></div>
+        <div class="note">Location-based зависит только от зоны и объёма — закупка сертификатов на него не влияет.</div>`,
+      chart:()=>chartZones(yr,zone)};
+  } else {
+    const yr=pick([2022,2023,2024,2025]);
+    const reg=pick(keys(HEAT[yr])); const EF=HEAT[yr][reg];
+    const Q=Math.round(rnd(1,40))*500; const E=Q*EF/1000;
+    return {cat:"base",
+      typeLabel:"Базовый · тепловая энергия (региональный метод)", color:"var(--teald)",
+      legend:`Объект компании в регионе <b>«${reg}»</b> покупает тепловую энергию. Отчётный год — <b>${yr}</b>. Для тепла применяется только региональный метод.`,
+      given:[["Регион",reg],["Год",yr],["Потребление тепла, Q",fmt0(Q)+" Гкал"],["Коэффициент EF<sub>т</sub>",fmt(EF,3)+" кг CO₂e/Гкал"]],
+      question:"Рассчитайте выбросы Scope 2 от тепла, тCO₂e.",
+      fields:[{key:"E",label:"Выбросы Scope 2 (тепло)",unit:"тCO₂e",kind:"num"}],
+      answer:{E:E}, tol:{E:Math.max(0.5,E*0.004)},
+      solution:()=>`<h4>Решение</h4>
+        <div class="step">Региональный метод для тепла: <span class="formula">E = Q × EF<sub>т</sub></span></div>
+        <div class="step">${fmt(EF,3)} кг = ${fmt(EF/1000,5)} тCO₂e/Гкал.</div>
+        <div class="step"><span class="formula">E = ${fmt0(Q)} × ${fmt(EF/1000,5)} = <b>${fmt(E,1)} тCO₂e</b></span></div>
+        <div class="note">Единица тепла — Гкал; рыночного метода для тепла в РФ пока нет.</div>`,
+      chart:()=>chartHeat(yr,reg)};
+  }
+}
+function genMarket(){
+  const yr=pick([2024,2025]); const zone=pick(keys(RES[yr]));
+  const EFr=RES[yr][zone], EFl=LOC[yr][zone];
+  const EC=Math.round(rnd(5,50))*1000;
+  const share=pick([10,20,25,30,40,50,60,70,75,80])/100;
+  const VG=EC*share; const Em=(EC-VG)*EFr/1000; const El=EC*EFl/1000;
+  return {cat:"market",
+    typeLabel:"Рыночный метод + зелёные сертификаты", color:"var(--amberd)",
+    legend:`Компания в зоне <b>«${zone}»</b> (${yr}) закупила сертификаты происхождения от ВИЭ на <b>${fmt0(share*100)}%</b> потребления (EF<sub>инд</sub>≈0). Остаток сети считается по residual mix.`,
+    given:[["Зона / год",zone+" · "+yr],["Потребление, EC",fmt0(EC)+" МВт·ч"],["Зелёные атрибуты, ΣVG",fmt0(VG)+" МВт·ч ("+fmt0(share*100)+"%)"],["EF<sub>инд</sub> (ВИЭ)","0 тCO₂e/МВт·ч"],["Residual mix, EF<sub>ост</sub>",fmt(EFr,3)+" кг CO₂e/МВт·ч"]],
+    question:"Рассчитайте выбросы Scope 2 рыночным методом (market-based), тCO₂e.",
+    fields:[{key:"E",label:"Market-based выбросы",unit:"тCO₂e",kind:"num"}],
+    answer:{E:Em}, tol:{E:Math.max(0.5,Em*0.005)},
+    solution:()=>`<h4>Решение</h4>
+      <div class="step">Рыночный метод: <span class="formula">E = Σ(VG<sub>l</sub>×EF<sub>l</sub>) + (EC − ΣVG<sub>l</sub>)×EF<sub>ост</sub></span></div>
+      <div class="step">Атрибуты ВИЭ дают 0; остаток ${fmt0(EC)} − ${fmt0(VG)} = ${fmt0(EC-VG)} МВт·ч идёт по residual mix.</div>
+      <div class="step"><span class="formula">E = 0 + ${fmt0(EC-VG)} × ${fmt(EFr/1000,5)} = <b>${fmt(Em,1)} тCO₂e</b></span></div>
+      <div class="note">Для сравнения (dual reporting): location-based = ${fmt0(EC)} × ${fmt(EFl/1000,5)} = <b>${fmt(El,1)} тCO₂e</b>. ${EFr>EFl?'Residual mix выше среднесетевого — при 0% атрибутов market-based был бы даже больше location-based.':''}</div>`,
+    chart:()=>chartMarket(EC,EFr,EFl,share)};
+}
+function genEcon(){
+  const yr=pick([2024,2025]); const zone=pick(keys(RES[yr]));
+  const EFr=RES[yr][zone]; const EC=Math.round(rnd(8,50))*1000;
+  const E0=EC*EFr/1000; const price=Math.round(rnd(12,55))*10;
+  if(Math.random()<0.5){
+    const f=pick([0.3,0.4,0.5,0.6,0.7]); const T=E0*f; const VG=EC*(1-f); const cost=VG*price;
+    return {cat:"econ",
+      typeLabel:"Экономика · достичь цель по выбросам", color:"var(--amberd)",
+      legend:`Компания в зоне <b>«${zone}»</b> (${yr}) хочет снизить рыночный Scope 2 до целевого уровня закупкой зелёных сертификатов (ВИЭ, EF≈0). Цена сертификата — <b>${fmt0(price)} ₽/МВт·ч</b>.`,
+      given:[["Потребление, EC",fmt0(EC)+" МВт·ч"],["Residual mix, EF<sub>ост</sub>",fmt(EFr,3)+" кг CO₂e/МВт·ч"],["Выбросы без атрибутов",fmt(E0,1)+" тCO₂e"],["Цель по Scope 2",fmt(T,1)+" тCO₂e"],["Цена сертификата",fmt0(price)+" ₽/МВт·ч"]],
+      question:"Сколько МВт·ч зелёных атрибутов нужно купить и какова их стоимость?",
+      fields:[{key:"VG",label:"Объём сертификатов",unit:"МВт·ч",kind:"num"},{key:"C",label:"Стоимость закупки",unit:"₽",kind:"num"}],
+      answer:{VG:VG,C:cost}, tol:{VG:Math.max(1,VG*0.01),C:Math.max(50,cost*0.01)},
+      solution:()=>`<h4>Решение</h4>
+        <div class="step">Остаток сети после закупки даёт целевые выбросы: <span class="formula">(EC − VG) × EF<sub>ост</sub> = T</span></div>
+        <div class="step"><span class="formula">EC − VG = T / EF<sub>ост</sub> = ${fmt(T,1)} / ${fmt(EFr/1000,5)} = ${fmt0(T/(EFr/1000))} МВт·ч</span></div>
+        <div class="step"><span class="formula">VG = ${fmt0(EC)} − ${fmt0(T/(EFr/1000))} = <b>${fmt0(VG)} МВт·ч</b></span></div>
+        <div class="step">Стоимость: <span class="formula">${fmt0(VG)} × ${fmt0(price)} = <b>${fmt0(cost)} ₽</b></span></div>
+        <div class="note">Покрытие потребления сертификатами = ${fmt0((1-f)*100)}%. Чем «грязнее» residual mix, тем меньше МВт·ч нужно для той же тонны сокращения.</div>`,
+      chart:()=>chartMarket(EC,EFr,LOC[yr][zone]||EFr,1-f)};
+  } else {
+    const MAC=price*1000/EFr; const carbon=Math.round(MAC*rnd(0.7,1.3)/10)*10; const worth=MAC<carbon;
+    return {cat:"econ",
+      typeLabel:"Экономика · предельная стоимость снижения", color:"var(--amberd)",
+      legend:`Компания в зоне <b>«${zone}»</b> (${yr}) сравнивает: закрыть выбросы зелёными сертификатами (ВИЭ) по <b>${fmt0(price)} ₽/МВт·ч</b> или платить «цену углерода» <b>${fmt0(carbon)} ₽/тCO₂e</b> за остающиеся выбросы.`,
+      given:[["Residual mix, EF<sub>ост</sub>",fmt(EFr,3)+" кг CO₂e/МВт·ч"],["Цена сертификата",fmt0(price)+" ₽/МВт·ч"],["Цена углерода",fmt0(carbon)+" ₽/тCO₂e"]],
+      question:"Найдите предельную стоимость снижения 1 тCO₂e сертификатами и решите, выгодна ли закупка.",
+      fields:[{key:"MAC",label:"Стоимость снижения 1 тCO₂e",unit:"₽/тCO₂e",kind:"num"},
+              {key:"D",label:"Решение",kind:"radio",options:[["yes","Закупать выгодно"],["no","Платить за углерод"]]}],
+      answer:{MAC:MAC,D:worth?"yes":"no"}, tol:{MAC:Math.max(1,MAC*0.01)},
+      solution:()=>`<h4>Решение</h4>
+        <div class="step">1 МВт·ч сертификата снимает EF<sub>ост</sub> = ${fmt(EFr/1000,5)} тCO₂e.</div>
+        <div class="step">Стоимость снижения тонны: <span class="formula">MAC = цена / EF<sub>ост</sub> = ${fmt0(price)} / ${fmt(EFr/1000,5)} = <b>${fmt0(MAC)} ₽/тCO₂e</b></span></div>
+        <div class="step">Сравнение с ценой углерода ${fmt0(carbon)} ₽/тCO₂e: ${worth?`MAC ниже → <span class="hl">закупка выгодна</span>`:`MAC выше → <span class="hl">дешевле платить за углерод</span>`}.</div>
+        <div class="note">Покупаем атрибуты, пока предельная стоимость снижения ниже цены углерода (или внутренней ставки).</div>`,
+      chart:()=>chartBars([{label:"Стоимость снижения (MAC)",value:MAC,color:"#2A9D8F"},{label:"Цена углерода",value:carbon,color:"#E0A23D"}],0,"Сравнение, ₽/тCO₂e")};
+  }
+}
+let theoryQueue=[];
+function genTheory(){
+  if(theoryQueue.length===0) theoryQueue=shuffle(THEORY.map((_,i)=>i));
+  const idx=theoryQueue.pop(); const Qd=THEORY[idx];
+  const order=shuffle(Qd.o.map((t,i)=>({t,i})));
+  const opts=order.map((o,k)=>[String(k),o.t]);
+  const correctKey=String(order.findIndex(o=>o.i===Qd.c));
+  return {cat:"theory",
+    typeLabel:"Тест · понимание презентации", color:"var(--violet)",
+    legend:"", given:[], question:Qd.q,
+    fields:[{key:"A",label:"",kind:"radio",stack:true,options:opts}],
+    answer:{A:correctKey}, tol:{},
+    solution:()=>`<h4>Пояснение</h4><div class="step">Верный ответ: <b>${Qd.o[Qd.c]}</b>.</div><div class="note">${Qd.e}</div>`,
+    chart:null};
+}
+const GEN={base:genBase, market:genMarket, econ:genEcon, theory:genTheory};
+
+/* ====================== ГРАФИКИ (SVG) ====================== */
+function svgFrame(w,h){return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif">`;}
+function chartBars(series,dec,title){
+  const w=620,h=240,padL=70,padR=20,padT=18,padB=64;
+  const max=Math.max(...series.map(s=>s.value))*1.18||1;
+  const bw=(w-padL-padR)/series.length;
+  let s=svgFrame(w,h);
+  for(let i=0;i<=4;i++){const y=padT+(h-padT-padB)*i/4;const val=max*(1-i/4);
+    s+=`<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#E2E8F0"/>`;
+    s+=`<text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="11" fill="#64748B">${fmt(val,dec)}</text>`;}
+  series.forEach((d,i)=>{
+    const bh=(h-padT-padB)*d.value/max; const x=padL+i*bw+bw*0.2; const y=h-padB-bh; const bww=bw*0.6;
+    s+=`<rect x="${x}" y="${y}" width="${bww}" height="${bh}" rx="4" fill="${d.color}"/>`;
+    s+=`<text x="${x+bww/2}" y="${y-6}" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E293B">${fmt(d.value,dec)}</text>`;
+    s+=`<text x="${x+bww/2}" y="${h-padB+18}" text-anchor="middle" font-size="11.5" fill="#475569">${d.label}</text>`;
+  });
+  s+=`</svg>`; return {title,svg:s};
+}
+function chartMarket(EC,EFr,EFl,curShare){
+  const shares=[0,0.25,0.5,0.75,1]; const w=620,h=260,padL=64,padR=20,padT=18,padB=50;
+  const mv=shares.map(sh=>(EC*(1-sh))*EFr/1000); const loc=EC*EFl/1000;
+  const max=Math.max(loc,...mv)*1.18||1; const bw=(w-padL-padR)/shares.length; let s=svgFrame(w,h);
+  for(let i=0;i<=4;i++){const y=padT+(h-padT-padB)*i/4;const val=max*(1-i/4);
+    s+=`<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#E2E8F0"/>`;
+    s+=`<text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="11" fill="#64748B">${fmt0(val)}</text>`;}
+  const ly=h-padB-(h-padT-padB)*loc/max;
+  s+=`<line x1="${padL}" y1="${ly}" x2="${w-padR}" y2="${ly}" stroke="#1E7A70" stroke-width="2" stroke-dasharray="6 4"/>`;
+  s+=`<text x="${w-padR}" y="${ly-6}" text-anchor="end" font-size="11" font-weight="700" fill="#1E7A70">location-based ${fmt0(loc)}</text>`;
+  shares.forEach((sh,i)=>{const bh=(h-padT-padB)*mv[i]/max; const x=padL+i*bw+bw*0.22; const y=h-padB-bh; const bww=bw*0.56;
+    const hot=Math.abs(sh-curShare)<0.001;
+    s+=`<rect x="${x}" y="${y}" width="${bww}" height="${bh}" rx="4" fill="${hot?'#E0A23D':'#9AD3CB'}"/>`;
+    if(hot) s+=`<text x="${x+bww/2}" y="${y-6}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#B07814">${fmt0(mv[i])}</text>`;
+    s+=`<text x="${x+bww/2}" y="${h-padB+18}" text-anchor="middle" font-size="11" fill="#475569">${fmt0(sh*100)}%</text>`;});
+  s+=`<text x="${padL}" y="${h-8}" font-size="11" fill="#64748B">доля зелёных атрибутов → market-based, тCO₂e</text>`;
+  s+=`</svg>`; return {title:"Market-based при разной доле атрибутов (оранжевый — ваш кейс)", svg:s};
+}
+function chartZones(yr,curZone){const src=LOC[yr];const arr=keys(src).map(z=>({z,v:src[z]})).sort((a,b)=>a.v-b.v);
+  return barsCtx(arr,curZone,"Коэффициенты зон в "+yr+" (ваша зона — оранжевая)");}
+function chartHeat(yr,curReg){const src=HEAT[yr];const arr=keys(src).map(z=>({z,v:src[z]})).sort((a,b)=>a.v-b.v);
+  return barsCtx(arr,curReg,"Коэффициенты регионов в "+yr+" (ваш регион — оранжевый)");}
+function barsCtx(arr,cur,title){
+  const w=620,h=270,padL=58,padR=14,padT=16,padB=92; const max=Math.max(...arr.map(a=>a.v))*1.16||1;
+  const bw=(w-padL-padR)/arr.length; let s=svgFrame(w,h);
+  for(let i=0;i<=4;i++){const y=padT+(h-padT-padB)*i/4;const val=max*(1-i/4);
+    s+=`<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#E2E8F0"/>`;
+    s+=`<text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="10.5" fill="#64748B">${fmt0(val)}</text>`;}
+  arr.forEach((d,i)=>{const bh=(h-padT-padB)*d.v/max; const x=padL+i*bw+bw*0.12; const y=h-padB-bh; const bww=bw*0.76; const hot=d.z===cur;
+    s+=`<rect x="${x}" y="${y}" width="${bww}" height="${bh}" rx="3" fill="${hot?'#E0A23D':'#2A9D8F'}"/>`;
+    if(hot) s+=`<text x="${x+bww/2}" y="${y-5}" text-anchor="middle" font-size="11" font-weight="700" fill="#B07814">${fmt0(d.v)}</text>`;
+    const lbl=d.z.replace('ТИТЭС ','').replace('НЦЗ ','').replace(' (Европа и Урал)','').replace(' области','').replace(' обл.','').replace(' края','').replace(' автономного округа','').replace(' АО','');
+    s+=`<text transform="translate(${x+bww/2},${h-padB+8}) rotate(45)" font-size="9.5" fill="#475569">${lbl}</text>`;});
+  s+=`</svg>`; return {title,svg:s};
+}
+
+/* ====================== СОСТОЯНИЕ ====================== */
+let mode="any", T=null, answered=false;
+let score=0, solved=0, attempts=0, correct=0, streak=0;
+const cats={base:{c:0,n:0},market:{c:0,n:0},econ:{c:0,n:0},theory:{c:0,n:0}};
+const log=[];
+
+/* profile persistence */
+function loadProfile(){try{const p=JSON.parse(localStorage.getItem('scope2_prof')||'{}');
+  if(p.fio)document.getElementById('p-fio').value=p.fio; if(p.fac)document.getElementById('p-fac').value=p.fac; if(p.grp)document.getElementById('p-grp').value=p.grp;}catch(e){}}
+function saveProfile(){try{localStorage.setItem('scope2_prof',JSON.stringify({fio:val('p-fio'),fac:val('p-fac'),grp:val('p-grp')}));}catch(e){}}
+const val=id=>document.getElementById(id).value.trim();
+
+function newTask(){
+  const type = mode==="any" ? pick(["base","market","econ"]) : mode;
+  T = GEN[type](); answered=false; render();
+}
+function render(){
+  const c=document.getElementById('card');
+  const fieldsHTML=T.fields.map(f=>{
+    if(f.kind==="radio"){
+      return `<div class="field" data-key="${f.key}">${f.label?`<label class="flab">${f.label}</label>`:''}
+        <div class="radios ${f.stack?'stack':''}" data-key="${f.key}">${f.options.map(o=>`<label data-val="${o[0]}"><input type="radio" name="${f.key}" value="${o[0]}">${o[1]}</label>`).join('')}</div></div>`;
+    }
+    return `<div class="field" data-key="${f.key}"><label class="flab">${f.label}</label>
+      <span class="ingroup"><input type="number" step="any" id="in-${f.key}" placeholder="ваш ответ"><span class="unit">${f.unit||'—'}</span></span></div>`;
+  }).join('');
+  c.innerHTML=`
+    ${badgeHTML(T,T.typeLabel)}
+    ${T.legend?`<p class="legend">${T.legend}</p>`:''}
+    ${givenHTML(T.given)}
+    <div class="q">${T.question}</div>
+    <div class="fields">${fieldsHTML}</div>
+    <div class="actions">
+      <button class="btn btn-teal" id="check">Проверить</button>
+      <button class="btn btn-ghost" id="reveal">Показать ${T.cat==='theory'?'ответ':'решение'}</button>
+    </div>
+    <div class="verdict" id="verdict"></div>
+    <div class="solution" id="solution"></div>
+    <div class="chartbox" id="chartbox"></div>`;
+  document.getElementById('check').onclick=check;
+  document.getElementById('reveal').onclick=reveal;
+  c.querySelectorAll('.radios label').forEach(l=>l.onclick=()=>{
+    const box=l.parentElement; box.querySelectorAll('label').forEach(x=>x.classList.remove('sel')); l.classList.add('sel');});
+  const inp=c.querySelector('input[type=number]'); if(inp && window.matchMedia && window.matchMedia('(pointer:fine)').matches) inp.focus({preventScroll:true});
+  c.querySelectorAll('input[type=number]').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')check();}));
+}
+function readAnswers(){const out={};T.fields.forEach(f=>{
+  if(f.kind==="radio"){const r=document.querySelector(`input[name="${f.key}"]:checked`);out[f.key]=r?r.value:null;}
+  else out[f.key]=parseNum(document.getElementById('in-'+f.key).value);});return out;}
+function check(){
+  if(answered) return;
+  const a=readAnswers(); let allOk=true, empty=0;
+  T.fields.forEach(f=>{
+    const fb=document.querySelector(`.field[data-key="${f.key}"]`); let ok;
+    if(f.kind==="radio"){ if(a[f.key]==null){empty++;ok=false;} else ok=(a[f.key]===T.answer[f.key]);
+      markRadio(f.key,a[f.key],T.answer[f.key]); }
+    else { if(isNaN(a[f.key])){empty++;ok=false;} else ok=Math.abs(a[f.key]-T.answer[f.key])<=T.tol[f.key];
+      fb.classList.toggle('ok',ok); fb.classList.toggle('bad',!ok); }
+    if(!ok) allOk=false;
+  });
+  if(empty===T.fields.length){flash("Введите/выберите ответ.","warn");return;}
+  answered=true; attempts++;
+  const pts={base:10,market:15,econ:20,theory:8}[T.cat];
+  cats[T.cat].n++; if(allOk)cats[T.cat].c++;
+  log.push({cat:T.cat,label:T.typeLabel,ok:allOk});
+  if(allOk){correct++;solved++;streak++;score+=pts+(streak>=3?5:0);
+    flash(`Верно! +${pts}${streak>=3?' +5 за серию 🔥':''} очков.`,"good");}
+  else{streak=0; flash(T.cat==='theory'?"Неверно. Смотрите пояснение ниже.":"Есть ошибки. Откройте разбор — там полный расчёт.","bad");}
+  showSolution(); updateStats();
+}
+function markRadio(key,userVal,rightVal){
+  document.querySelectorAll(`.radios[data-key="${key}"] label`).forEach(l=>{
+    const v=l.getAttribute('data-val');
+    if(v===rightVal) l.classList.add('right');
+    if(v===userVal && userVal!==rightVal) l.classList.add('wrong');});
+}
+function reveal(){
+  if(!answered){answered=true;attempts++;streak=0;cats[T.cat].n++;log.push({cat:T.cat,label:T.typeLabel,ok:false});updateStats();}
+  T.fields.forEach(f=>{ if(f.kind==='radio') markRadio(f.key,null,T.answer[f.key]);
+    else{const fb=document.querySelector(`.field[data-key="${f.key}"]`); if(!fb.classList.contains('ok')) fb.classList.add('bad');}});
+  flash(T.cat==='theory'?"Правильный ответ отмечен:":"Разбор задачи:","warn"); showSolution();
+}
+function showSolution(){
+  const sol=document.getElementById('solution'); sol.innerHTML=T.solution(); sol.classList.add('show');
+  const ch=T.chart?T.chart():null;
+  if(ch){document.getElementById('chartbox').innerHTML=`<h4>${ch.title}</h4>${ch.svg}`;}
+}
+function flash(msg,kind){const v=document.getElementById('verdict');v.textContent=msg;v.className='verdict show '+kind;}
+function updateStats(){
+  document.getElementById('st-score').textContent=score;
+  document.getElementById('st-solved').textContent=solved;
+  document.getElementById('st-streak').textContent=streak;
+  document.getElementById('st-acc').textContent=attempts?Math.round(correct/attempts*100)+'%':'—';
+  document.getElementById('pbar').style.width=Math.min(100,(streak/5)*100)+'%';
+  const put=(k,c,n)=>{const s=$('mst-'+k),b=$('mb-'+k); if(!s)return; s.textContent=n?('верно '+c+' из '+n):'ещё не решали'; b.style.width=n?Math.round(c/n*100)+'%':'0';};
+  ['base','market','econ','theory'].forEach(k=>put(k,cats[k].c,cats[k].n));
+  put('any',cats.base.c+cats.market.c+cats.econ.c,cats.base.n+cats.market.n+cats.econ.n);
+}
+
+/* ====================== ИТОГОВЫЙ ОТЧЁТ ====================== */
+function buildReport(){
+  const fio=val('p-fio'), fac=val('p-fac'), grp=val('p-grp');
+  const d=new Date();
+  const dt=d.toLocaleString('ru-RU');
+  const catName={base:"Базовый расчёт",market:"Рыночный метод",econ:"Экономика закупки",theory:"Тест по теории"};
+  let lines=[];
+  lines.push("РЕЗУЛЬТАТЫ ТРЕНАЖЁРА SCOPE 2");
+  lines.push("================================");
+  lines.push("ФИО: "+(fio||"—"));
+  lines.push("Факультет: "+(fac||"—"));
+  lines.push("Группа/курс: "+(grp||"—"));
+  lines.push("Дата и время: "+dt);
+  lines.push("");
+  lines.push("ИТОГО: очки "+score+" | решено "+solved+" из "+attempts+" попыток | точность "+(attempts?Math.round(correct/attempts*100):0)+"%");
+  lines.push("");
+  lines.push("По блокам (верно / всего):");
+  Object.keys(cats).forEach(k=>{ if(cats[k].n>0) lines.push("  • "+catName[k]+": "+cats[k].c+" / "+cats[k].n); });
+  lines.push("");
+  lines.push("Журнал попыток:");
+  log.forEach((e,i)=>lines.push("  "+(i+1)+". ["+(e.ok?"✓":"✗")+"] "+e.label));
+  if(log.length===0) lines.push("  (пока нет завершённых заданий)");
+  return lines.join("\n");
+}
+function openResults(){
+  const fio=val('p-fio');
+  if(!fio){flashProfile(); document.getElementById('p-fio').focus(); return;}
+  saveProfile();
+  const rep=buildReport();
+  document.getElementById('report').value=rep;
+  const r=document.getElementById('results'); r.classList.add('show'); r.scrollIntoView({behavior:'smooth'});
+}
+function flashProfile(){
+  const fio=document.getElementById('p-fio'); fio.style.borderColor='#C0392B';
+  setTimeout(()=>fio.style.borderColor='',1500);
+}
+function mailReport(){
+  const fio=val('p-fio')||"студент";
+  const subject="Результаты тренажёра Scope 2 — "+fio;
+  const body=document.getElementById('report').value;
+  window.location.href="mailto:i@dsenchuk.ru?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+}
+function copyReport(){const t=document.getElementById('report');t.select();
+  try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand('copy');}
+  const b=document.getElementById('copyRep');const o=b.textContent;b.textContent="Скопировано ✓";setTimeout(()=>b.textContent=o,1500);}
+function downloadReport(){
+  const fio=val('p-fio')||"student";
+  const blob=new Blob([document.getElementById('report').value],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download="Scope2_результаты_"+fio.replace(/\s+/g,'_')+".txt";a.click();}
+
+/* ====================== КОНТРОЛЬНАЯ РАБОТА ====================== */
+const QS=new URLSearchParams(location.search);
+const clampInt=(v,d,lo,hi)=>{const n=parseInt(v,10);return isNaN(n)?d:Math.max(lo,Math.min(hi,n));};
+const EXAM_CFG={base:clampInt(QS.get('b'),5,0,30),market:clampInt(QS.get('m'),5,0,30),econ:clampInt(QS.get('e'),5,0,30),theory:clampInt(QS.get('t'),10,0,THEORY.length),min:clampInt(QS.get('min'),45,5,240)};
+const BLOCK_NAME={base:"Базовый расчёт",market:"Рыночный метод",econ:"Экономика закупки",theory:"Тест по теории"};
+const EX_KEY='scope2_exam';
+let EX=null, exTimerId=null;
+const $=id=>document.getElementById(id);
+function exSave(){try{localStorage.setItem(EX_KEY,JSON.stringify(EX));}catch(e){}}
+function exLoad(){try{return JSON.parse(localStorage.getItem(EX_KEY)||'null');}catch(e){return null;}}
+const stripHtml=s=>String(s).replace(/<[^>]+>/g,'');
+function packTask(T){return {cat:T.cat,typeLabel:T.typeLabel,color:T.color,legend:T.legend,given:T.given,question:T.question,fields:T.fields,answer:T.answer,tol:T.tol};}
+function setPracticeVisible(on){
+  ['statsBox','pbarBox','ctrls','card','finishBox'].forEach(id=>$(id).classList.toggle('hide',!on));
+  if(!on) $('results').classList.remove('show');
+}
+function lockProfile(on){['p-fio','p-fac','p-grp'].forEach(id=>$(id).disabled=on);}
+function showOnly(id){['examIntro','examView','examDone'].forEach(k=>$(k).classList.toggle('hide',k!==id));
+  const focus=(id==='examView'); $('topHeader').classList.toggle('hide',focus); $('profileBox').classList.toggle('hide',focus);}
+
+function showExamIntro(){
+  const prev=exLoad();
+  if(prev && !prev.submitted){EX=prev; resumeExam(); return;}
+  setPracticeVisible(false); lockProfile(false); showOnly('examIntro');
+  const c=EXAM_CFG, n=c.base+c.market+c.econ+c.theory;
+  $('examIntro').innerHTML=`<span class="badge" style="background:var(--violet)">Контрольная работа</span>
+   <p class="legend">Всего <b>${n}</b> заданий, время — <b>${c.min} мин</b>. Условия генерируются индивидуально для каждого студента.</p>
+   <div class="comp">${['base','market','econ','theory'].filter(k=>c[k]>0).map(k=>`<div style="border-color:${CAT[k].c}"><b style="color:${CAT[k].d}">${c[k]}</b>${BLOCK_NAME[k]}</div>`).join('')}</div>
+   <ul class="rules">
+    <li>Ответы во время работы <b>не проверяются</b>, решения и подсказки не показываются.</li>
+    <li>Между заданиями можно переходить и менять ответы — до сдачи работы.</li>
+    <li>Когда время выйдет, работа будет <b>сдана автоматически</b>. Перезагрузка страницы не сбрасывает таймер и задания.</li>
+    <li>После сдачи вы увидите итоговый балл; подробный отчёт отправляется преподавателю.</li>
+   </ul>
+   <p class="legend">Перед началом заполните ФИО, факультет и группу в полях выше.</p>
+   <div class="actions"><button class="btn btn-exam" id="exStart">Начать контрольную ▶</button><button class="btn btn-ghost" id="exBack">Вернуться к тренировке</button></div>
+   <div class="verdict" id="exMsg"></div>`;
+  $('exStart').onclick=startExam; $('exBack').onclick=backToPractice;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function startExam(){
+  const fio=val('p-fio');
+  if(!fio){const m=$('exMsg');m.textContent='Укажите ФИО в поле вверху страницы.';m.className='verdict show warn';flashProfile();$('p-fio').focus();return;}
+  saveProfile();
+  const tasks=[];
+  ['base','market','econ'].forEach(k=>{for(let i=0;i<EXAM_CFG[k];i++) tasks.push(packTask(GEN[k]()));});
+  theoryQueue=[]; for(let i=0;i<EXAM_CFG.theory;i++) tasks.push(packTask(genTheory())); theoryQueue=[];
+  let att=1; try{att=(parseInt(localStorage.getItem('scope2_exam_att')||'0',10)||0)+1; localStorage.setItem('scope2_exam_att',String(att));}catch(e){}
+  const now=Date.now();
+  EX={tasks,answers:tasks.map(()=>({})),idx:0,start:now,deadline:now+EXAM_CFG.min*60000,cfg:Object.assign({},EXAM_CFG),
+      submitted:false,auto:false,attempt:att,fio,fac:val('p-fac'),grp:val('p-grp')};
+  exSave(); resumeExam();
+}
+function resumeExam(){
+  if(Date.now()>=EX.deadline){submitExam(true);return;}
+  setPracticeVisible(false); lockProfile(true); showOnly('examView');
+  $('exWho').textContent='Контрольная работа · '+EX.fio;
+  renderExamQ(); tick(); clearInterval(exTimerId); exTimerId=setInterval(tick,1000);
+}
+function tick(){
+  if(!EX||EX.submitted) return;
+  const left=EX.deadline-Date.now();
+  if(left<=0){submitExam(true);return;}
+  const m=Math.floor(left/60000), s=Math.floor(left%60000/1000);
+  $('exTimer').textContent='⏱ '+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  $('exTimer').classList.toggle('warn',left<5*60000);
+}
+function isAnswered(i){const T=EX.tasks[i],A=EX.answers[i];return T.fields.every(f=>A[f.key]!=null&&String(A[f.key]).trim()!=='');}
+function refreshNav(){
+  const N=EX.tasks.length, done=EX.tasks.filter((_,k)=>isAnswered(k)).length;
+  $('exProg').textContent=`Задание ${EX.idx+1} из ${N} · отвечено ${done} из ${N}`;
+  $('exNav').querySelectorAll('button').forEach(b=>{const k=+b.dataset.k;b.classList.toggle('done',isAnswered(k));b.classList.toggle('cur',k===EX.idx);});
+}
+function goTo(k){EX.idx=Math.max(0,Math.min(EX.tasks.length-1,k));exSave();renderExamQ();window.scrollTo({top:0,behavior:'smooth'});}
+function renderExamQ(){
+  const i=EX.idx,T=EX.tasks[i],A=EX.answers[i],N=EX.tasks.length;
+  $('exNav').innerHTML=EX.tasks.map((t,k)=>`<button data-k="${k}" title="${BLOCK_NAME[t.cat]}" style="--c:${CAT[t.cat].c}">${k+1}</button>`).join('');
+  $('exNav').querySelectorAll('button').forEach(b=>b.onclick=()=>goTo(+b.dataset.k));
+  const fieldsHTML=T.fields.map(f=>{
+    if(f.kind==="radio"){
+      return `<div class="field">${f.label?`<label class="flab">${f.label}</label>`:''}
+        <div class="radios ${f.stack?'stack':''}">${f.options.map(o=>`<label class="${A[f.key]===o[0]?'sel':''}"><input type="radio" name="ex-${f.key}" value="${o[0]}" ${A[f.key]===o[0]?'checked':''}>${o[1]}</label>`).join('')}</div></div>`;}
+    const v=A[f.key]!=null?String(A[f.key]).replace(/"/g,''):'';
+    return `<div class="field"><label class="flab">${f.label}</label><span class="ingroup"><input class="ex-input" type="text" inputmode="decimal" autocomplete="off" data-key="${f.key}" value="${v}" placeholder="ваш ответ"><span class="unit">${f.unit||'—'}</span></span></div>`;
+  }).join('');
+  $('exCard').innerHTML=`${badgeHTML(T,BLOCK_NAME[T.cat]+' · задание '+(i+1))}
+    ${T.legend?`<p class="legend">${T.legend}</p>`:''}
+    ${givenHTML(T.given)}
+    <div class="q">${T.question}</div>
+    <div class="fields">${fieldsHTML}</div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="exPrev" ${i===0?'disabled':''}>← Назад</button>
+      <button class="btn btn-teal" id="exNext" ${i===N-1?'disabled':''}>Далее →</button>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn btn-exam" id="exSubmit">Сдать работу</button>
+    </div>`;
+  $('exCard').querySelectorAll('.ex-input').forEach(el=>{
+    el.addEventListener('input',()=>{A[el.dataset.key]=el.value;exSave();refreshNav();});
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'&&i<N-1)goTo(i+1);});});
+  $('exCard').querySelectorAll('.radios input').forEach(el=>el.addEventListener('change',()=>{
+    const key=el.name.replace('ex-','');A[key]=el.value;exSave();
+    el.closest('.radios').querySelectorAll('label').forEach(l=>l.classList.remove('sel'));el.parentElement.classList.add('sel');refreshNav();}));
+  $('exPrev').onclick=()=>goTo(i-1); $('exNext').onclick=()=>goTo(i+1); $('exSubmit').onclick=()=>submitExam(false);
+  refreshNav();
+}
+function gradeExam(){
+  let pts=0,full=0;const blk={},det=[];
+  EX.tasks.forEach((T,i)=>{const A=EX.answers[i];let ok=0;
+    T.fields.forEach(f=>{
+      if(f.kind==='radio'){if(A[f.key]!=null&&A[f.key]===T.answer[f.key])ok++;}
+      else{const v=parseNum(A[f.key]);if(!isNaN(v)&&Math.abs(v-T.answer[f.key])<=T.tol[f.key])ok++;}});
+    const sc=ok/T.fields.length; pts+=sc; if(sc===1)full++;
+    blk[T.cat]=blk[T.cat]||{p:0,n:0}; blk[T.cat].p+=sc; blk[T.cat].n++; det.push(sc);});
+  return {pts,full,n:EX.tasks.length,pct:Math.round(pts/Math.max(1,EX.tasks.length)*100),blk,det};
+}
+function submitExam(auto){
+  if(!EX||EX.submitted) return;
+  if(!auto){
+    const un=EX.tasks.length-EX.tasks.filter((_,k)=>isAnswered(k)).length;
+    if(!confirm(un?`Без ответа осталось заданий: ${un}. Сдать работу? Изменить ответы после сдачи будет нельзя.`:'Сдать работу? Изменить ответы после сдачи будет нельзя.')) return;}
+  clearInterval(exTimerId);
+  EX.submitted=true; EX.auto=!!auto; EX.end=Math.min(Date.now(),EX.deadline); EX.result=gradeExam(); exSave();
+  showExamDone();
+}
+function showExamDone(){
+  setPracticeVisible(false); lockProfile(false); showOnly('examDone');
+  const r=EX.result, mins=Math.max(1,Math.round((EX.end-EX.start)/60000));
+  $('examDone').innerHTML=`<span class="badge" style="background:var(--violet)">Контрольная работа сдана</span>
+    <p class="legend"><b>${EX.fio}</b>${EX.grp?' · '+EX.grp:''}${EX.fac?' · '+EX.fac:''}</p>
+    <div class="score-big">${fmt(r.pts,1)} <span>из ${r.n} баллов</span></div>
+    <p class="legend">Выполнено: <b>${r.pct}%</b> · время работы: ${mins} мин${EX.auto?' · сдана автоматически по истечении времени':''}</p>
+    <p class="legend">Отправьте результат преподавателю: кнопка откроет письмо на <b>i@dsenchuk.ru</b> — останется нажать «Отправить». Если письмо не открылось, скачайте отчёт и отправьте его файлом.</p>
+    <div class="actions"><button class="btn btn-exam" id="exMail">Отправить преподавателю ✉</button><button class="btn btn-ghost" id="exDl">Скачать отчёт (.txt)</button><button class="btn btn-ghost" id="exHome">Вернуться к тренировке</button></div>`;
+  $('exMail').onclick=mailExam; $('exDl').onclick=downloadExam; $('exHome').onclick=backToPractice;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function backToPractice(){clearInterval(exTimerId);['examIntro','examView','examDone'].forEach(k=>$(k).classList.add('hide'));$('topHeader').classList.remove('hide');$('profileBox').classList.remove('hide');lockProfile(false);setPracticeVisible(true);}
+function ansText(T,A){
+  return T.fields.map(f=>{const v=A[f.key];
+    if(v==null||String(v).trim()==='') return (T.fields.length>1?f.label+': ':'')+'— нет ответа';
+    if(f.kind==='radio'){const o=f.options.find(o=>o[0]===v);return (T.fields.length>1?f.label+': ':'')+'«'+(o?o[1]:v)+'»';}
+    return (T.fields.length>1?f.label+': ':'')+String(v).trim()+(f.unit?' '+f.unit:'');}).join('; ');
+}
+function etalonText(T){
+  return T.fields.map(f=>{const v=T.answer[f.key];
+    if(f.kind==='radio'){const o=f.options.find(o=>o[0]===v);return o?o[1]:v;}
+    return fmt(v,f.key==='C'?0:1);}).join('; ');
+}
+function buildExamReport(short){
+  const r=EX.result, dt=x=>new Date(x).toLocaleString('ru-RU'), mins=Math.max(1,Math.round((EX.end-EX.start)/60000));
+  const L=[];
+  L.push('КОНТРОЛЬНАЯ РАБОТА — ТРЕНАЖЁР SCOPE 2');
+  L.push('==================================');
+  L.push('ФИО: '+EX.fio); L.push('Факультет: '+(EX.fac||'—')); L.push('Группа/курс: '+(EX.grp||'—'));
+  L.push('Начало: '+dt(EX.start)+'; сдано: '+dt(EX.end)+' ('+mins+' мин из '+EX.cfg.min+')'+(EX.auto?' — АВТОМАТИЧЕСКИ ПО ТАЙМЕРУ':''));
+  L.push('Попытка №'+EX.attempt+' на этом устройстве');
+  L.push('');
+  L.push('ИТОГО: '+fmt(r.pts,1)+' из '+r.n+' баллов ('+r.pct+'%); полностью верно: '+r.full+' из '+r.n);
+  L.push('По блокам:');
+  ['base','market','econ','theory'].forEach(k=>{if(r.blk[k])L.push('  • '+BLOCK_NAME[k]+': '+fmt(r.blk[k].p,1)+' / '+r.blk[k].n);});
+  if(short){L.push('');L.push('Подробный разбор по заданиям — в файле отчёта (кнопка «Скачать отчёт»).');return L.join('\n');}
+  L.push('');L.push('ЗАДАНИЯ (✓ верно, ½ частично, ✗ неверно):');
+  EX.tasks.forEach((T,i)=>{const sc=r.det[i], mark=sc===1?'✓':(sc>0?'½':'✗');
+    const cond=T.cat==='theory'?T.question:T.given.map(g=>stripHtml(g[1])).join('; ');
+    let line=(i+1)+'. ['+mark+'] '+BLOCK_NAME[T.cat]+' | '+cond+' → ответ: '+ansText(T,EX.answers[i]);
+    if(T.cat!=='theory') line+=' (эталон: '+etalonText(T)+')';
+    L.push(line);});
+  return L.join('\n');
+}
+function mailExam(){
+  const subj='Контрольная Scope 2 — '+EX.fio+' — '+EX.result.pct+'%';
+  let body=buildExamReport(false);
+  if(encodeURIComponent(body).length>7000) body=buildExamReport(true);
+  window.location.href='mailto:i@dsenchuk.ru?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+}
+function downloadExam(){
+  const blob=new Blob([buildExamReport(false)],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='Scope2_контрольная_'+EX.fio.replace(/\s+/g,'_')+'.txt';a.click();
+}
+window.addEventListener('beforeunload',e=>{if(EX&&!EX.submitted&&!$('examView').classList.contains('hide')){e.preventDefault();e.returnValue='';}});
+
+/* ====================== СОБЫТИЯ ====================== */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); mode=t.dataset.type; newTask();});
+document.getElementById('newTask').onclick=newTask;
+document.getElementById('finish').onclick=openResults;
+document.getElementById('sendMail').onclick=mailReport;
+document.getElementById('copyRep').onclick=copyReport;
+document.getElementById('dlRep').onclick=downloadReport;
+document.getElementById('closeRep').onclick=()=>document.getElementById('results').classList.remove('show');
+['p-fio','p-fac','p-grp'].forEach(id=>document.getElementById(id).addEventListener('change',saveProfile));
+document.querySelectorAll('[data-ic]').forEach(el=>{el.outerHTML=ic(el.dataset.ic,+(el.dataset.s||20));});
+document.getElementById('examBtn').onclick=showExamIntro;
+loadProfile(); newTask(); updateStats();
+(function(){const prev=exLoad(); if(prev&&!prev.submitted){EX=prev;resumeExam();} else if(QS.has('exam')){showExamIntro();}})();
+</script>
+</body>
+</html>
